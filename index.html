@@ -36,7 +36,7 @@ body{background:#f5f5f5;display:flex;justify-content:center;align-items:center;m
 #inp{flex:1;padding:9px 14px;border-radius:22px;border:0.5px solid #ccc;font-size:13px;outline:none;color:#111;background:#fff}
 #inp:focus{border-color:#25a244}
 #inp:disabled{background:#f5f5f5;color:#aaa;cursor:not-allowed}
-#sbtn{padding:9px 18px;border-radius:1px;background:#f6f8f6;border: 1px;color:#0c0c0c;font-size:13px;font-weight:500;cursor:pointer}
+#sbtn{padding:9px 18px;border-radius:1px;background:#f6f8f6;border:1px;color:#0c0c0c;font-size:13px;font-weight:500;cursor:pointer}
 #sbtn:hover{background:#f3f5f4}
 #sbtn:disabled{background:#ccc;cursor:not-allowed}
 .typing-row{display:flex}
@@ -78,7 +78,6 @@ const inp=document.getElementById("inp");
 const sbtn=document.getElementById("sbtn");
 
 function now(){const d=new Date();let h=d.getHours(),m=d.getMinutes(),ap=h>=12?"PM":"AM";h=h%12||12;return`${h}:${m.toString().padStart(2,"0")} ${ap}`}
-
 function clearHint(){const h=document.getElementById("empty-hint");if(h)h.remove();}
 
 function lockUI(){
@@ -138,6 +137,7 @@ const HELP_OPTS=[{divider:"— Learn how to use CARE Bot —"},{label:"▶  Watc
 function mainMenu(){return`Hi ${PAT.name}!\nHow can I assist you today?`;}
 function unknownMenu(){return`Here's what I can help you with:`;}
 
+// ── KEY FIX: all known top-level intents are listed here ──
 function detectIntent(m){
   if(["1","medicine","medicines","med","meds"].includes(m))return"medicine";
   if(["2","appointment","appointments","appt"].includes(m))return"appointment";
@@ -147,6 +147,14 @@ function detectIntent(m){
   if(["support","contact","helpline"].includes(m))return"support";
   if(["0","cancel","exit","back","menu","main"].includes(m))return"cancel";
   return"unknown";
+}
+
+// returns true ONLY for text-based top-level commands — never for bare numbers.
+// Numbers like "1","2","3","4","5" are ambiguous (list selection vs menu shortcut)
+// so they must stay within the active handler flow, not escape it.
+function isTopLevelEscape(m){
+  if(/^\d+$/.test(m)) return false; // pure number → never escape
+  return detectIntent(m)!=="unknown";
 }
 
 function buildMedPage(meds,page){
@@ -166,7 +174,10 @@ function handleMed(m){
   if(S.step===0){const meds=PAT.medicines;S.ctx.meds=meds;S.ctx.medPage=0;S.step=1;return buildMedPage(meds,0);}
   if(S.step===1){
     const n=parseInt(m),meds=S.ctx.meds;
-    if(isNaN(n)||n<1||n>meds.length)return{...buildMedPage(meds,S.ctx.medPage||0),text:"Please select a valid medicine number."};
+    if(isNaN(n)||n<1||n>meds.length){
+      if(isNaN(n)){S.activeHandler=null;S.step=0;S.ctx={};return{text:unknownMenu(),intent:"unknown",handler:"Dispatcher.unknown_to_menu",opts:MAIN_OPTS};}
+      return{...buildMedPage(meds,S.ctx.medPage||0),text:`Please select a number between 1 and ${meds.length}.`};
+    }
     const med=meds[n-1];S.ctx.sel=med;S.step=2;
     return{text:`${med.name}\n─────────────────\nDose      : ${med.dose}\nTiming    : ${med.timing}\nFrequency : ${med.freq}\nDuration  : ${med.duration}`,intent:"medicine",handler:"MedicineHandler.detail",opts:[{label:"View another medicine",val:"1"},{label:"Back to main menu",val:"0"}]};
   }
@@ -175,7 +186,7 @@ function handleMed(m){
 
 function handleAppt(m){
   if(S.step===0){const a=PAT.appointments;S.ctx.apts=a;S.step=1;const opts=a.map((ap,i)=>({label:`${ap.doctor} — ${ap.date} ${ap.time}`,val:`${i+1}`}));opts.push({label:"Back to main menu",val:"0"});return{text:`Your appointments (${a.length})\nSelect one to view details:`,intent:"appointment",handler:"AppointmentHandler.list",opts};}
-  if(S.step===1){const n=parseInt(m),a=S.ctx.apts;if(isNaN(n)||n<1||n>a.length){const opts=a.map((ap,i)=>({label:`${ap.doctor} — ${ap.date}`,val:`${i+1}`}));opts.push({label:"Back to main menu",val:"0"});return{text:`Please select a valid option (1–${a.length})`,intent:"appointment",handler:"AppointmentHandler.invalid",opts};}const ap=a[n-1];S.step=2;return{text:`Appointment Details\n─────────────────\nDoctor    : ${ap.doctor}\nDept      : ${ap.dept}\nDate      : ${ap.date}\nTime      : ${ap.time}\nStatus    : ${ap.status}`,intent:"appointment",handler:"AppointmentHandler.detail",opts:[{label:"View another appointment",val:"1"},{label:"Back to main menu",val:"0"}]};}
+  if(S.step===1){const n=parseInt(m),a=S.ctx.apts;if(isNaN(n)||n<1||n>a.length){if(isNaN(n)){S.activeHandler=null;S.step=0;S.ctx={};return{text:unknownMenu(),intent:"unknown",handler:"Dispatcher.unknown_to_menu",opts:MAIN_OPTS};}const opts=a.map((ap,i)=>({label:`${ap.doctor} — ${ap.date}`,val:`${i+1}`}));opts.push({label:"Back to main menu",val:"0"});return{text:`Please select a number between 1 and ${a.length}.`,intent:"appointment",handler:"AppointmentHandler.invalid",opts};}const ap=a[n-1];S.step=2;return{text:`Appointment Details\n─────────────────\nDoctor    : ${ap.doctor}\nDept      : ${ap.dept}\nDate      : ${ap.date}\nTime      : ${ap.time}\nStatus    : ${ap.status}`,intent:"appointment",handler:"AppointmentHandler.detail",opts:[{label:"View another appointment",val:"1"},{label:"Back to main menu",val:"0"}]};}
   if(S.step===2){if(m==="1"){S.step=0;return handleAppt(m);}return null;}
 }
 
@@ -183,7 +194,7 @@ function handleVitals(){const v=PAT.vitals;S.step=1;return{text:`Latest Vitals\n
 
 function handleRec(m){
   if(S.step===0){const r=PAT.records;S.ctx.recs=r;S.step=1;const opts=r.map((rec,i)=>({label:`${rec.type} — ${rec.date}`,val:`${i+1}`}));opts.push({label:"Back to main menu",val:"0"});return{text:`Your records (${r.length})\nSelect one to view details:`,intent:"records",handler:"RecordsHandler.list",opts};}
-  if(S.step===1){const n=parseInt(m),r=S.ctx.recs;if(isNaN(n)||n<1||n>r.length){const opts=r.map((rec,i)=>({label:`${rec.type} — ${rec.date}`,val:`${i+1}`}));opts.push({label:"Back to main menu",val:"0"});return{text:`Please select a valid option (1–${r.length})`,intent:"records",handler:"RecordsHandler.invalid",opts};}const rec=r[n-1];S.step=2;return{text:`Record Details\n─────────────────\nType    : ${rec.type}\nDate    : ${rec.date}\nLab     : ${rec.lab}\nStatus  : Available`,intent:"records",handler:"RecordsHandler.detail",opts:[{label:"View another record",val:"1"},{label:"Back to main menu",val:"0"}]};}
+  if(S.step===1){const n=parseInt(m),r=S.ctx.recs;if(isNaN(n)||n<1||n>r.length){if(isNaN(n)){S.activeHandler=null;S.step=0;S.ctx={};return{text:unknownMenu(),intent:"unknown",handler:"Dispatcher.unknown_to_menu",opts:MAIN_OPTS};}const opts=r.map((rec,i)=>({label:`${rec.type} — ${rec.date}`,val:`${i+1}`}));opts.push({label:"Back to main menu",val:"0"});return{text:`Please select a number between 1 and ${r.length}.`,intent:"records",handler:"RecordsHandler.invalid",opts};}const rec=r[n-1];S.step=2;return{text:`Record Details\n─────────────────\nType    : ${rec.type}\nDate    : ${rec.date}\nLab     : ${rec.lab}\nStatus  : Available`,intent:"records",handler:"RecordsHandler.detail",opts:[{label:"View another record",val:"1"},{label:"Back to main menu",val:"0"}]};}
   if(S.step===2){if(m==="1"){S.step=0;return handleRec(m);}return null;}
 }
 
@@ -204,8 +215,27 @@ function dispatch(val){
     return{text:`Incorrect year of birth. Please try again.\n\n${3-S.yobTries} attempt${3-S.yobTries===1?"":"s"} remaining.`,intent:"auth",handler:"AuthHandler.mismatch",opts:[]};
   }
 
-  if(["0","cancel","exit","back","menu","main"].includes(m)){S.activeHandler=null;S.step=0;S.ctx={};return{text:mainMenu(),intent:"cancel",handler:"Dispatcher.reset",opts:MAIN_OPTS};}
-  if(S.activeHandler&&(m==="__next__"||m==="__prev__")&&S.activeHandler==="medicine")return handleMed(m);
+  // ── cancel / back always resets ──
+  if(["0","cancel","exit","back","menu","main"].includes(m)){
+    S.activeHandler=null;S.step=0;S.ctx={};
+    return{text:mainMenu(),intent:"cancel",handler:"Dispatcher.reset",opts:MAIN_OPTS};
+  }
+
+  // ── pagination passes straight through to active handler ──
+  if(S.activeHandler&&(m==="__next__"||m==="__prev__")&&S.activeHandler==="medicine"){
+    return handleMed(m);
+  }
+
+  // ── ESCAPE FIX: if mid-flow but user typed a text-based known intent
+  //    (e.g. "medicine", "support", "help") — escape and re-route.
+  //    Pure numbers (1,2,3…) are NEVER treated as escape triggers —
+  //    they belong to the active handler's list selection. ──
+  if(S.activeHandler&&S.activeHandler!=="help"&&isTopLevelEscape(m)){
+    S.activeHandler=null;S.step=0;S.ctx={};
+    // fall through to intent routing below
+  }
+
+  // ── continue active flow if still set ──
   if(S.activeHandler&&S.activeHandler!=="help"){
     let res=null;
     if(S.activeHandler==="medicine")res=handleMed(m);
@@ -213,13 +243,29 @@ function dispatch(val){
     else if(S.activeHandler==="vitals")res=handleVitals();
     else if(S.activeHandler==="records")res=handleRec(m);
     if(res)return res;
+    // handler returned null → reset and fall through
     S.activeHandler=null;S.step=0;S.ctx={};
   }
+
+  // ── top-level intent routing ──
   const intent=detectIntent(m);
-  if(intent==="unknown")return{text:unknownMenu(),intent:"unknown",handler:"Dispatcher.unknown_to_menu",opts:MAIN_OPTS};
-  if(intent==="cancel"){S.activeHandler=null;S.step=0;S.ctx={};return{text:mainMenu(),intent:"cancel",handler:"Dispatcher.reset",opts:MAIN_OPTS};}
-  if(intent==="help"){S.activeHandler="help";return{text:"How can I help you?\n\nChoose an option below:",intent:"help",handler:"HelpHandler",opts:HELP_OPTS};}
-  if(intent==="support"){return{text:"Support Contact\n─────────────────\nPhone   : +91-800-CARE-OHC\nEmail   : support@care.ohc.network\nHours   : Mon–Sat, 9 AM – 6 PM\n\nOur team will  Connect",intent:"support",handler:"HelpHandler.support",opts:[{label:"Back to main menu",val:"0"}]};}
+
+  // unknown → show menu (never show error)
+  if(intent==="unknown"){
+    return{text:unknownMenu(),intent:"unknown",handler:"Dispatcher.unknown_to_menu",opts:MAIN_OPTS};
+  }
+  if(intent==="cancel"){
+    S.activeHandler=null;S.step=0;S.ctx={};
+    return{text:mainMenu(),intent:"cancel",handler:"Dispatcher.reset",opts:MAIN_OPTS};
+  }
+  if(intent==="help"){
+    S.activeHandler="help";
+    return{text:"How can I help you?\n\nChoose an option below:",intent:"help",handler:"HelpHandler",opts:HELP_OPTS};
+  }
+  if(intent==="support"){
+    return{text:"Support Contact\n─────────────────\nPhone   : +91-800-CARE-OHC\nEmail   : support@care.ohc.network\nHours   : Mon–Sat, 9 AM – 6 PM\n\nOur team will get back to you shortly.",intent:"support",handler:"HelpHandler.support",opts:[{label:"Back to main menu",val:"0"}]};
+  }
+
   S.activeHandler=intent;S.step=0;S.ctx={};
   if(intent==="medicine")return handleMed(m);
   if(intent==="appointment")return handleAppt(m);
