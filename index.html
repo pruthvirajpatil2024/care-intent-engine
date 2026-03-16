@@ -3,26 +3,27 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>CARE Bot — Intent Engine</title>
+<title>CARE Bot — Multilingual</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#f5f5f5;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:system-ui,sans-serif}
-#wrap{display:flex;flex-direction:column;height:640px;width:420px;background:#fff;border:0.5px solid #e0e0e0;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
+#wrap{display:flex;flex-direction:column;height:680px;width:420px;background:#fff;border:0.5px solid #e0e0e0;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
 #topbar{background:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:0.5px solid #e0e0e0}
 .av{width:38px;height:38px;border-radius:50%;background:#e8f5e9;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;color:#2e7d32}
 .tinfo .tname{font-size:14px;font-weight:500;color:#111}
 .tinfo .tsub{font-size:11px;color:#999}
+#lang-badge{margin-left:auto;font-size:11px;padding:3px 8px;border-radius:10px;background:#e8f5e9;color:#2e7d32;font-weight:500}
 #msgs{flex:1;overflow-y:auto;padding:14px 14px 8px;display:flex;flex-direction:column;gap:10px;background:#fff}
 #empty-hint{display:flex;align-items:center;justify-content:center;height:100%;color:#bbb;font-size:13px}
 .row{display:flex;flex-direction:column}
 .row.you{align-items:flex-end}
 .row.bot{align-items:flex-start}
-.bub{max-width:72%;padding:9px 12px;font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;color:#111}
+.bub{max-width:75%;padding:9px 12px;font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;color:#111}
 .bub.you{background:#dcf8c6;border-radius:12px 12px 2px 12px}
 .bub.bot{background:#f1f1f1;border-radius:12px 12px 12px 2px}
 .ts{font-size:10px;color:#aaa;margin-top:3px;padding:0 3px}
 .dbg{font-size:10px;color:#bbb;margin-top:2px;padding:2px 6px;background:#f9f9f9;border-radius:4px;font-family:monospace}
-.opts{display:flex;flex-direction:column;gap:6px;margin-top:4px;max-width:72%}
+.opts{display:flex;flex-direction:column;gap:6px;margin-top:4px;max-width:75%}
 .opt-btn{width:100%;padding:9px 14px;border:1.5px solid #25a244;border-radius:8px;background:#fff;color:#25a244;font-size:13px;font-weight:500;cursor:pointer;text-align:center;transition:background .15s}
 .opt-btn:hover{background:#f0faf3}
 .opt-btn:active{background:#e0f5e8}
@@ -31,6 +32,8 @@ body{background:#f5f5f5;display:flex;justify-content:center;align-items:center;m
 .opt-btn.link-btn:hover{background:#e8f0fe}
 .opt-btn.nav-btn{border-color:#aaa;color:#666;font-size:12px;padding:7px 14px}
 .opt-btn.nav-btn:hover{background:#f5f5f5}
+.opt-btn.lang-btn{border-color:#7c4dff;color:#7c4dff;font-size:13px}
+.opt-btn.lang-btn:hover{background:#f3e5f5}
 .divider{font-size:11px;color:#aaa;padding:2px 0}
 #bar{padding:10px 12px;border-top:0.5px solid #e0e0e0;display:flex;gap:8px;background:#fff}
 #inp{flex:1;padding:9px 14px;border-radius:22px;border:0.5px solid #ccc;font-size:13px;outline:none;color:#111;background:#fff}
@@ -55,57 +58,446 @@ body{background:#f5f5f5;display:flex;justify-content:center;align-items:center;m
       <div class="tname">CARE Bot</div>
       <div class="tsub">OHC Health Assistant</div>
     </div>
+    <div id="lang-badge" style="display:none"></div>
   </div>
-  <div id="msgs">
-    <div id="empty-hint"></div>
-  </div>
+  <div id="msgs"><div id="empty-hint"></div></div>
   <div id="bar">
     <input id="inp" placeholder=""/>
     <button id="sbtn">SEND</button>
   </div>
 </div>
-
 <script>
+// ── Patient data ──────────────────────────────────────────────────────────────
 const PATIENTS={"+919000000001":{name:"Pruthviraj Patil",yob:1990,medicines:[{id:1,name:"Metformin",dose:"500mg",timing:"Morning after food",freq:"Twice daily",duration:"Ongoing"},{id:2,name:"Atorvastatin",dose:"10mg",timing:"Night after food",freq:"Once daily",duration:"Ongoing"},{id:3,name:"Aspirin",dose:"75mg",timing:"Morning after food",freq:"Once daily",duration:"Ongoing"},{id:4,name:"Lisinopril",dose:"5mg",timing:"Morning",freq:"Once daily",duration:"3 months"},{id:5,name:"Omeprazole",dose:"20mg",timing:"Before breakfast",freq:"Once daily",duration:"30 days"},{id:6,name:"Cetirizine",dose:"10mg",timing:"Night",freq:"Once daily",duration:"15 days"},{id:7,name:"Vitamin D3",dose:"60000IU",timing:"Sunday morning",freq:"Once weekly",duration:"3 months"}],appointments:[{id:1,doctor:"Dr. Meena Kulkarni",dept:"Cardiology",date:"18 Mar 2026",time:"10:30 AM",status:"Confirmed"},{id:2,doctor:"Dr. Arjun Patil",dept:"General Medicine",date:"25 Mar 2026",time:"02:00 PM",status:"Pending"}],vitals:{bp:"122/80 mmHg",sugar:"108 mg/dL",weight:"72 kg",pulse:"78 bpm",recorded:"14 Mar 2026"},records:[{id:1,type:"Blood Report",date:"10 Mar 2026",lab:"City Diagnostics"},{id:2,type:"ECG Report",date:"01 Mar 2026",lab:"CARE Hospital"}]}};
+const DEMO="+919000000001",PAGE_SIZE=5;
 
-const DEMO="+919000000001";
-const PAGE_SIZE=5;
-let S={phase:"welcome",yobTries:0,activeHandler:null,step:0,ctx:{}};
-let PAT=null;
+// ── State ─────────────────────────────────────────────────────────────────────
+let S={phase:"welcome",lang:null,yobTries:0,activeHandler:null,step:0,ctx:{}},PAT=null;
 
-const msgs=document.getElementById("msgs");
-const inp=document.getElementById("inp");
-const sbtn=document.getElementById("sbtn");
+// ── UI refs ───────────────────────────────────────────────────────────────────
+const msgs=document.getElementById("msgs"),inp=document.getElementById("inp"),sbtn=document.getElementById("sbtn");
 
+// ── Translation strings ───────────────────────────────────────────────────────
+// Uses {placeholder} syntax, interpolated by fmt()
+const STRINGS={
+  en:{
+    lang_name:"English",
+    lang_select:"Hello! Welcome to CARE Bot\nनमस्ते! / नमस्कार! / నమస్కారం! / வணக்கம்! / ನಮಸ್ಕಾರ!\n\nPlease select your language:",
+    welcome_yob:"Hello! Welcome to CARE Bot\n\nTo assist you, please enter your year of birth.\n\nExample: 1990",
+    yob_wrong:"Incorrect year of birth. Please try again.\n\n{n} attempt{s} remaining.",
+    yob_locked:"Too many incorrect attempts.\n\nPlease try again after 24 hours.",
+    locked_banner:"Access locked. Please try again after 24 hours.",
+    locked_ph:"Access locked. Please try after 24 hours.",
+    main_menu:"Hi {name}!\nHow can I assist you today?",
+    unknown_menu:"Here's what I can help you with:",
+    med_list:"Your medicines ({n})\nPage {p} of {t} — showing {s}–{e}:",
+    med_detail:"{name}\n─────────────────\nDose      : {dose}\nTiming    : {timing}\nFrequency : {freq}\nDuration  : {dur}",
+    appt_list:"Your appointments ({n})\nSelect one to view details:",
+    appt_detail:"Appointment Details\n─────────────────\nDoctor    : {doctor}\nDept      : {dept}\nDate      : {date}\nTime      : {time}\nStatus    : {status}",
+    vitals:"Latest Vitals\n─────────────────\nBP         : {bp}\nBlood Sugar: {sugar}\nWeight     : {weight}\nPulse      : {pulse}\nRecorded   : {recorded}",
+    rec_list:"Your records ({n})\nSelect one to view details:",
+    rec_detail:"Record Details\n─────────────────\nType    : {type}\nDate    : {date}\nLab     : {lab}\nStatus  : Available",
+    help_title:"How can I help you?\n\nChoose an option below:",
+    support_text:"Support Contact\n─────────────────\nPhone   : +91-800-CARE-OHC\nEmail   : support@care.ohc.network\nHours   : Mon–Sat, 9 AM – 6 PM\n\nOur team will get back to you shortly.",
+    btn_medicines:"Medicines",btn_appointments:"Appointments",btn_vitals:"Vitals",
+    btn_records:"Records",btn_help:"Help",btn_back:"Back to main menu",
+    btn_view_med:"View another medicine",btn_view_appt:"View another appointment",
+    btn_view_rec:"View another record",btn_prev:"← Previous page",btn_next:"Next page →",
+    btn_contact:"📞  Contact Support",btn_youtube:"▶  Watch Tutorial on YouTube",
+    btn_guide:"📖  Read the Website Guide",
+    div_learn:"— Learn how to use CARE Bot —",div_support:"— Need human support? —",div_goback:"— Go back —",
+  },
+  hi:{
+    lang_name:"हिंदी",
+    lang_select:"Hello! Welcome to CARE Bot\nनमस्ते! / नमस्कार! / నమస్కారం! / வணக்கம்! / ನಮಸ್ಕಾರ!\n\nPlease select your language:",
+    welcome_yob:"नमस्ते! CARE Bot में आपका स्वागत है\n\nआपकी सहायता के लिए, कृपया अपना जन्म वर्ष दर्ज करें।\n\nउदाहरण: 1990",
+    yob_wrong:"जन्म वर्ष गलत है। कृपया पुनः प्रयास करें।\n\n{n} प्रयास शेष {s}।",
+    yob_locked:"बहुत अधिक गलत प्रयास।\n\nकृपया 24 घंटे बाद पुनः प्रयास करें।",
+    locked_banner:"पहुँच अवरुद्ध। कृपया 24 घंटे बाद पुनः प्रयास करें।",
+    locked_ph:"पहुँच अवरुद्ध। कृपया 24 घंटे बाद प्रयास करें।",
+    main_menu:"नमस्ते {name}!\nआज मैं आपकी कैसे सहायता कर सकता हूँ?",
+    unknown_menu:"मैं इनमें आपकी सहायता कर सकता हूँ:",
+    med_list:"आपकी दवाइयाँ ({n})\nपृष्ठ {p}/{t} — {s}–{e} दिखाए जा रहे हैं:",
+    med_detail:"{name}\n─────────────────\nखुराक     : {dose}\nसमय       : {timing}\nआवृत्ति   : {freq}\nअवधि      : {dur}",
+    appt_list:"आपकी अपॉइंटमेंट ({n})\nविवरण देखने के लिए चुनें:",
+    appt_detail:"अपॉइंटमेंट विवरण\n─────────────────\nडॉक्टर   : {doctor}\nविभाग     : {dept}\nदिनांक    : {date}\nसमय       : {time}\nस्थिति    : {status}",
+    vitals:"स्वास्थ्य जाँच\n─────────────────\nB.P.       : {bp}\nब्लड शुगर : {sugar}\nवजन       : {weight}\nनाड़ी      : {pulse}\nरिकॉर्ड   : {recorded}",
+    rec_list:"आपके रिकॉर्ड ({n})\nविवरण देखने के लिए चुनें:",
+    rec_detail:"रिकॉर्ड विवरण\n─────────────────\nप्रकार    : {type}\nदिनांक    : {date}\nलैब       : {lab}\nस्थिति    : उपलब्ध",
+    help_title:"मैं आपकी कैसे मदद करूँ?\n\nएक विकल्प चुनें:",
+    support_text:"सहायता संपर्क\n─────────────────\nफ़ोन    : +91-800-CARE-OHC\nईमेल   : support@care.ohc.network\nसमय    : सोम–शनि, सुबह 9 – शाम 6\n\nहमारी टीम जल्द संपर्क करेगी।",
+    btn_medicines:"दवाइयाँ",btn_appointments:"अपॉइंटमेंट",btn_vitals:"स्वास्थ्य जाँच",
+    btn_records:"रिकॉर्ड",btn_help:"सहायता",btn_back:"मुख्य मेनू पर वापस",
+    btn_view_med:"अन्य दवा देखें",btn_view_appt:"अन्य अपॉइंटमेंट देखें",
+    btn_view_rec:"अन्य रिकॉर्ड देखें",btn_prev:"← पिछला पृष्ठ",btn_next:"अगला पृष्ठ →",
+    btn_contact:"📞  सहायता से संपर्क करें",btn_youtube:"▶  YouTube पर ट्यूटोरियल देखें",
+    btn_guide:"📖  वेबसाइट गाइड पढ़ें",
+    div_learn:"— CARE Bot का उपयोग कैसे करें —",div_support:"— मानव सहायता चाहिए? —",div_goback:"— वापस जाएँ —",
+  },
+  mr:{
+    lang_name:"मराठी",
+    lang_select:"Hello! Welcome to CARE Bot\nनमस्ते! / नमस्कार! / నమస్కారం! / வணக்கம்! / ನಮಸ್ಕಾರ!\n\nPlease select your language:",
+    welcome_yob:"नमस्कार! CARE Bot मध्ये आपले स्वागत आहे\n\nआपल्याला मदत करण्यासाठी, कृपया आपले जन्म वर्ष टाका.\n\nउदाहरण: 1990",
+    yob_wrong:"जन्म वर्ष चुकीचे आहे. कृपया पुन्हा प्रयत्न करा.\n\n{n} प्रयत्न शिल्लक {s}.",
+    yob_locked:"खूप जास्त चुकीचे प्रयत्न.\n\nकृपया 24 तासांनंतर पुन्हा प्रयत्न करा.",
+    locked_banner:"प्रवेश अवरोधित. कृपया 24 तासांनंतर पुन्हा प्रयत्न करा.",
+    locked_ph:"प्रवेश अवरोधित. कृपया 24 तासांनंतर प्रयत्न करा.",
+    main_menu:"नमस्कार {name}!\nआज मी आपल्याला कशी मदत करू?",
+    unknown_menu:"मी यामध्ये आपली मदत करू शकतो:",
+    med_list:"आपली औषधे ({n})\nपृष्ठ {p}/{t} — {s}–{e} दाखवत आहे:",
+    med_detail:"{name}\n─────────────────\nडोस       : {dose}\nवेळ        : {timing}\nवारंवारता : {freq}\nकालावधी  : {dur}",
+    appt_list:"आपल्या अपॉइंटमेंट ({n})\nतपशील पाहण्यासाठी निवडा:",
+    appt_detail:"अपॉइंटमेंट तपशील\n─────────────────\nडॉक्टर   : {doctor}\nविभाग     : {dept}\nदिनांक    : {date}\nवेळ        : {time}\nस्थिती    : {status}",
+    vitals:"आरोग्य तपासणी\n─────────────────\nB.P.       : {bp}\nरक्त शर्करा: {sugar}\nवजन       : {weight}\nनाडी      : {pulse}\nनोंद      : {recorded}",
+    rec_list:"आपले रेकॉर्ड ({n})\nतपशील पाहण्यासाठी निवडा:",
+    rec_detail:"रेकॉर्ड तपशील\n─────────────────\nप्रकार    : {type}\nदिनांक    : {date}\nप्रयोगशाळा: {lab}\nस्थिती    : उपलब्ध",
+    help_title:"मी कशी मदत करू?\n\nएक पर्याय निवडा:",
+    support_text:"सहाय्य संपर्क\n─────────────────\nफोन    : +91-800-CARE-OHC\nईमेल   : support@care.ohc.network\nवेळ    : सोम–शनि, सकाळी 9 – संध्याकाळी 6\n\nआमची टीम लवकरच संपर्क करेल.",
+    btn_medicines:"औषधे",btn_appointments:"अपॉइंटमेंट",btn_vitals:"आरोग्य तपासणी",
+    btn_records:"रेकॉर्ड",btn_help:"मदत",btn_back:"मुख्य मेनूवर परत",
+    btn_view_med:"इतर औषध पहा",btn_view_appt:"इतर अपॉइंटमेंट पहा",
+    btn_view_rec:"इतर रेकॉर्ड पहा",btn_prev:"← मागील पृष्ठ",btn_next:"पुढील पृष्ठ →",
+    btn_contact:"📞  सहाय्याशी संपर्क करा",btn_youtube:"▶  YouTube वर ट्यूटोरियल पहा",
+    btn_guide:"📖  वेबसाइट मार्गदर्शिका वाचा",
+    div_learn:"— CARE Bot कसे वापरावे —",div_support:"— मानवी सहाय्य हवे आहे? —",div_goback:"— मागे जा —",
+  },
+  te:{
+    lang_name:"తెలుగు",
+    lang_select:"Hello! Welcome to CARE Bot\nనమస్కారం! / नमस्ते! / नमस्कार! / வணக்கம்! / ನಮಸ್ಕಾರ!\n\nPlease select your language:",
+    welcome_yob:"నమస్కారం! CARE Bot కి స్వాగతం\n\nమీకు సహాయం చేయడానికి, దయచేసి మీ జన్మ సంవత్సరం నమోదు చేయండి.\n\nఉదాహరణ: 1990",
+    yob_wrong:"జన్మ సంవత్సరం తప్పు. దయచేసి మళ్ళీ ప్రయత్నించండి.\n\n{n} ప్రయత్నాలు మిగిలాయి.",
+    yob_locked:"చాలా తప్పు ప్రయత్నాలు.\n\nదయచేసి 24 గంటల తర్వాత మళ్ళీ ప్రయత్నించండి.",
+    locked_banner:"యాక్సెస్ బ్లాక్ చేయబడింది. దయచేసి 24 గంటల తర్వాత మళ్ళీ ప్రయత్నించండి.",
+    locked_ph:"యాక్సెస్ బ్లాక్. దయచేసి 24 గంటల తర్వాత ప్రయత్నించండి.",
+    main_menu:"నమస్కారం {name}!\nనేను మీకు ఎలా సహాయం చేయగలను?",
+    unknown_menu:"నేను ఇవి చేయగలను:",
+    med_list:"మీ మందులు ({n})\nపేజీ {p}/{t} — {s}–{e} చూపిస్తోంది:",
+    med_detail:"{name}\n─────────────────\nడోసు      : {dose}\nసమయం     : {timing}\nపౌనఃపున్యం: {freq}\nవ్యవధి    : {dur}",
+    appt_list:"మీ అపాయింట్‌మెంట్‌లు ({n})\nవివరాలు చూడటానికి ఎంచుకోండి:",
+    appt_detail:"అపాయింట్‌మెంట్ వివరాలు\n─────────────────\nడాక్టర్   : {doctor}\nవిభాగం    : {dept}\nతేదీ      : {date}\nసమయం     : {time}\nస్థితి    : {status}",
+    vitals:"ఆరోగ్య వివరాలు\n─────────────────\nB.P.       : {bp}\nబ్లడ్ షుగర్: {sugar}\nబరువు     : {weight}\nపల్స్     : {pulse}\nనమోదు    : {recorded}",
+    rec_list:"మీ రికార్డులు ({n})\nవివరాలు చూడటానికి ఎంచుకోండి:",
+    rec_detail:"రికార్డ్ వివరాలు\n─────────────────\nరకం      : {type}\nతేదీ      : {date}\nల్యాబ్    : {lab}\nస్థితి    : అందుబాటులో ఉంది",
+    help_title:"నేను ఎలా సహాయం చేయగలను?\n\nఒక విషయం ఎంచుకోండి:",
+    support_text:"సహాయం సంప్రదింపు\n─────────────────\nఫోన్   : +91-800-CARE-OHC\nఇమెయిల్: support@care.ohc.network\nసమయం  : సోమ–శని, ఉ. 9 – సా. 6\n\nమా బృందం త్వరలో సంప్రదిస్తుంది.",
+    btn_medicines:"మందులు",btn_appointments:"అపాయింట్‌మెంట్‌లు",btn_vitals:"ఆరోగ్య వివరాలు",
+    btn_records:"రికార్డులు",btn_help:"సహాయం",btn_back:"ప్రధాన మెనుకి వెళ్ళు",
+    btn_view_med:"మరో మందు చూడు",btn_view_appt:"మరో అపాయింట్‌మెంట్ చూడు",
+    btn_view_rec:"మరో రికార్డు చూడు",btn_prev:"← మునుపటి పేజీ",btn_next:"తదుపరి పేజీ →",
+    btn_contact:"📞  సహాయం సంప్రదించండి",btn_youtube:"▶  YouTube లో చూడండి",
+    btn_guide:"📖  వెబ్‌సైట్ గైడ్ చదవండి",
+    div_learn:"— CARE Bot ఎలా వాడాలి —",div_support:"— మానవ సహాయం కావాలా? —",div_goback:"— వెనుకకు వెళ్ళు —",
+  },
+  ta:{
+    lang_name:"தமிழ்",
+    lang_select:"Hello! Welcome to CARE Bot\nவணக்கம்! / नमस्ते! / नमस्कार! / నమస్కారం! / ನಮಸ್ಕಾರ!\n\nPlease select your language:",
+    welcome_yob:"வணக்கம்! CARE Bot-க்கு வரவேற்கிறோம்\n\nஉங்களுக்கு உதவ, தயவுசெய்து உங்கள் பிறந்த ஆண்டை உள்ளிடுக.\n\nஎடுத்துக்காட்டு: 1990",
+    yob_wrong:"பிறந்த ஆண்டு தவறானது. மீண்டும் முயற்சிக்கவும்.\n\n{n} முயற்சிகள் மீதமுள்ளன.",
+    yob_locked:"மிகவும் அதிகமான தவறான முயற்சிகள்.\n\nதயவுசெய்து 24 மணி நேரம் கழித்து மீண்டும் முயற்சிக்கவும்.",
+    locked_banner:"அணுகல் தடுக்கப்பட்டது. 24 மணி நேரம் கழித்து மீண்டும் முயற்சிக்கவும்.",
+    locked_ph:"அணுகல் தடுக்கப்பட்டது. 24 மணி நேரம் கழித்து முயற்சிக்கவும்.",
+    main_menu:"வணக்கம் {name}!\nநான் உங்களுக்கு எவ்வாறு உதவலாம்?",
+    unknown_menu:"நான் இவற்றில் உதவ முடியும்:",
+    med_list:"உங்கள் மருந்துகள் ({n})\nபக்கம் {p}/{t} — {s}–{e} காட்டுகிறது:",
+    med_detail:"{name}\n─────────────────\nடோஸ்      : {dose}\nநேரம்      : {timing}\nஅதிர்வெண்  : {freq}\nகாலம்      : {dur}",
+    appt_list:"உங்கள் சந்திப்புகள் ({n})\nவிவரங்களை பார்க்க தேர்ந்தெடுக்கவும்:",
+    appt_detail:"சந்திப்பு விவரங்கள்\n─────────────────\nமருத்துவர்: {doctor}\nதுறை       : {dept}\nதேதி       : {date}\nநேரம்      : {time}\nநிலை       : {status}",
+    vitals:"உடல்நலன் விவரங்கள்\n─────────────────\nB.P.        : {bp}\nரத்த சர்க்கரை: {sugar}\nஎடை        : {weight}\nமிடிப்பு   : {pulse}\nபதிவு      : {recorded}",
+    rec_list:"உங்கள் பதிவுகள் ({n})\nவிவரங்களை பார்க்க தேர்ந்தெடுக்கவும்:",
+    rec_detail:"பதிவு விவரங்கள்\n─────────────────\nவகை       : {type}\nதேதி       : {date}\nஆய்வகம்   : {lab}\nநிலை       : கிடைக்கிறது",
+    help_title:"நான் எவ்வாறு உதவலாம்?\n\nஒரு விருப்பத்தை தேர்ந்தெடுக்கவும்:",
+    support_text:"ஆதரவு தொடர்பு\n─────────────────\nதொலைபேசி: +91-800-CARE-OHC\nமின்னஞ்சல்: support@care.ohc.network\nநேரம்    : திங்கள்–சனி, காலை 9 – மாலை 6\n\nஎங்கள் குழு விரைவில் தொடர்பு கொள்ளும்.",
+    btn_medicines:"மருந்துகள்",btn_appointments:"சந்திப்புகள்",btn_vitals:"உடல்நலன்",
+    btn_records:"பதிவுகள்",btn_help:"உதவி",btn_back:"முதன்மை மெனுவிற்கு திரும்பு",
+    btn_view_med:"மற்றொரு மருந்தை பார்",btn_view_appt:"மற்றொரு சந்திப்பை பார்",
+    btn_view_rec:"மற்றொரு பதிவை பார்",btn_prev:"← முந்தைய பக்கம்",btn_next:"அடுத்த பக்கம் →",
+    btn_contact:"📞  ஆதரவை தொடர்பு கொள்ளுங்கள்",btn_youtube:"▶  YouTube இல் பாருங்கள்",
+    btn_guide:"📖  வலைதள வழிகாட்டி படிக்கவும்",
+    div_learn:"— CARE Bot எவ்வாறு பயன்படுத்துவது —",div_support:"— மனித ஆதரவு தேவையா? —",div_goback:"— திரும்பிச் செல்லுங்கள் —",
+  },
+  kn:{
+    lang_name:"ಕನ್ನಡ",
+    lang_select:"Hello! Welcome to CARE Bot\nನಮಸ್ಕಾರ! / नमस्ते! / नमस्कार! / నమస్కారం! / வணக்கம்!\n\nPlease select your language:",
+    welcome_yob:"ನಮಸ್ಕಾರ! CARE Bot ಗೆ ಸ್ವಾಗತ\n\nನಿಮಗೆ ಸಹಾಯ ಮಾಡಲು, ದಯವಿಟ್ಟು ನಿಮ್ಮ ಜನ್ಮ ವರ್ಷವನ್ನು ನಮೂದಿಸಿ.\n\nಉದಾಹರಣೆ: 1990",
+    yob_wrong:"ಜನ್ಮ ವರ್ಷ ತಪ್ಪಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.\n\n{n} ಪ್ರಯತ್ನಗಳು ಉಳಿದಿವೆ.",
+    yob_locked:"ಹಲವಾರು ತಪ್ಪು ಪ್ರಯತ್ನಗಳು.\n\nದಯವಿಟ್ಟು 24 ಗಂಟೆಗಳ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+    locked_banner:"ಪ್ರವೇಶ ನಿರ್ಬಂಧಿಸಲಾಗಿದೆ. ದಯವಿಟ್ಟು 24 ಗಂಟೆಗಳ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+    locked_ph:"ಪ್ರವೇಶ ನಿರ್ಬಂಧಿಸಲಾಗಿದೆ. 24 ಗಂಟೆಗಳ ನಂತರ ಪ್ರಯತ್ನಿಸಿ.",
+    main_menu:"ನಮಸ್ಕಾರ {name}!\nಇಂದು ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ?",
+    unknown_menu:"ನಾನು ಇವುಗಳಲ್ಲಿ ಸಹಾಯ ಮಾಡಬಲ್ಲೆ:",
+    med_list:"ನಿಮ್ಮ ಔಷಧಿಗಳು ({n})\nಪುಟ {p}/{t} — {s}–{e} ತೋರಿಸಲಾಗುತ್ತಿದೆ:",
+    med_detail:"{name}\n─────────────────\nಡೋಸ್      : {dose}\nಸಮಯ       : {timing}\nಆವೃತ್ತಿ   : {freq}\nಅವಧಿ      : {dur}",
+    appt_list:"ನಿಮ್ಮ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್‌ಗಳು ({n})\nವಿವರಗಳನ್ನು ನೋಡಲು ಆಯ್ಕೆ ಮಾಡಿ:",
+    appt_detail:"ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ವಿವರಗಳು\n─────────────────\nವೈದ್ಯರು  : {doctor}\nವಿಭಾಗ     : {dept}\nದಿನಾಂಕ    : {date}\nಸಮಯ       : {time}\nಸ್ಥಿತಿ    : {status}",
+    vitals:"ಆರೋಗ್ಯ ವಿವರಗಳು\n─────────────────\nB.P.       : {bp}\nರಕ್ತ ಸಕ್ಕರೆ: {sugar}\nತೂಕ       : {weight}\nನಾಡಿ      : {pulse}\nದಾಖಲು    : {recorded}",
+    rec_list:"ನಿಮ್ಮ ದಾಖಲೆಗಳು ({n})\nವಿವರಗಳನ್ನು ನೋಡಲು ಆಯ್ಕೆ ಮಾಡಿ:",
+    rec_detail:"ದಾಖಲೆ ವಿವರಗಳು\n─────────────────\nವಿಧ       : {type}\nದಿನಾಂಕ    : {date}\nಲ್ಯಾಬ್    : {lab}\nಸ್ಥಿತಿ    : ಲಭ್ಯವಿದೆ",
+    help_title:"ನಾನು ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ?\n\nಒಂದು ಆಯ್ಕೆ ಆರಿಸಿ:",
+    support_text:"ಸಹಾಯ ಸಂಪರ್ಕ\n─────────────────\nಫೋನ್   : +91-800-CARE-OHC\nಇಮೇಲ್  : support@care.ohc.network\nಸಮಯ    : ಸೋಮ–ಶನಿ, ಬೆಳಿಗ್ಗೆ 9 – ಸಂಜೆ 6\n\nನಮ್ಮ ತಂಡ ಶೀಘ್ರದಲ್ಲಿ ಸಂಪರ್ಕಿಸುತ್ತದೆ.",
+    btn_medicines:"ಔಷಧಿಗಳು",btn_appointments:"ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್‌ಗಳು",btn_vitals:"ಆರೋಗ್ಯ ವಿವರಗಳು",
+    btn_records:"ದಾಖಲೆಗಳು",btn_help:"ಸಹಾಯ",btn_back:"ಮುಖ್ಯ ಮೆನುಗೆ ಹಿಂತಿರುಗಿ",
+    btn_view_med:"ಇನ್ನೊಂದು ಔಷಧಿ ನೋಡಿ",btn_view_appt:"ಇನ್ನೊಂದು ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ನೋಡಿ",
+    btn_view_rec:"ಇನ್ನೊಂದು ದಾಖಲೆ ನೋಡಿ",btn_prev:"← ಹಿಂದಿನ ಪುಟ",btn_next:"ಮುಂದಿನ ಪುಟ →",
+    btn_contact:"📞  ಸಹಾಯ ಸಂಪರ್ಕಿಸಿ",btn_youtube:"▶  YouTube ನಲ್ಲಿ ನೋಡಿ",
+    btn_guide:"📖  ವೆಬ್‌ಸೈಟ್ ಮಾರ್ಗದರ್ಶಿ ಓದಿ",
+    div_learn:"— CARE Bot ಹೇಗೆ ಬಳಸಬೇಕು —",div_support:"— ಮಾನವ ಸಹಾಯ ಬೇಕೇ? —",div_goback:"— ಹಿಂದೆ ಹೋಗಿ —",
+  },
+};
+
+// ── Data value translation maps ──────────────────────────────────────────────
+// Keys are English source values from patient data.
+// tD(val) translates any data value to current language.
+const DATA_TRANS={
+  en:{
+    // timing
+    "Morning after food":"Morning after food","Night after food":"Night after food",
+    "Morning":"Morning","Before breakfast":"Before breakfast","Sunday morning":"Sunday morning",
+    // frequency
+    "Twice daily":"Twice daily","Once daily":"Once daily","Once weekly":"Once weekly","SOS":"SOS",
+    // duration
+    "Ongoing":"Ongoing","3 months":"3 months","30 days":"30 days","15 days":"15 days","5 days":"5 days",
+    // status
+    "Confirmed":"Confirmed","Pending":"Pending","Available":"Available",
+    // departments
+    "Cardiology":"Cardiology","General Medicine":"General Medicine","Endocrinology":"Endocrinology",
+    "Orthopedics":"Orthopedics","Neurology":"Neurology","Dermatology":"Dermatology",
+    // record types
+    "Blood Report":"Blood Report","ECG Report":"ECG Report","Thyroid Panel":"Thyroid Panel",
+    "X-Ray":"X-Ray","MRI Report":"MRI Report","Urine Report":"Urine Report",
+    // patient name
+    "Pruthviraj Patil":"Pruthviraj Patil",
+    // doctor names
+    "Dr. Meena Kulkarni":"Dr. Meena Kulkarni","Dr. Arjun Patil":"Dr. Arjun Patil",
+    "Dr. Priya Joshi":"Dr. Priya Joshi",
+    // lab names
+    "City Diagnostics":"City Diagnostics","CARE Hospital":"CARE Hospital","LabCorp":"LabCorp",
+  },
+  hi:{
+    "Morning after food":"सुबह खाने के बाद","Night after food":"रात खाने के बाद",
+    "Morning":"सुबह","Before breakfast":"नाश्ते से पहले","Sunday morning":"रविवार सुबह",
+    "Twice daily":"दिन में दो बार","Once daily":"दिन में एक बार","Once weekly":"सप्ताह में एक बार","SOS":"जरूरत के अनुसार",
+    "Ongoing":"जारी","3 months":"3 महीने","30 days":"30 दिन","15 days":"15 दिन","5 days":"5 दिन",
+    "Confirmed":"पुष्टि हुई","Pending":"लंबित","Available":"उपलब्ध",
+    "Cardiology":"हृदय रोग विभाग","General Medicine":"सामान्य चिकित्सा","Endocrinology":"अंतःस्राव विभाग",
+    "Orthopedics":"हड्डी रोग विभाग","Neurology":"तंत्रिका विभाग","Dermatology":"त्वचा रोग विभाग",
+    "Blood Report":"रक्त रिपोर्ट","ECG Report":"ईसीजी रिपोर्ट","Thyroid Panel":"थायरॉइड जाँच",
+    "X-Ray":"एक्स-रे","MRI Report":"एमआरआई रिपोर्ट","Urine Report":"मूत्र रिपोर्ट",
+    "Pruthviraj Patil":"पृथ्वीराज पाटिल",
+    "Dr. Meena Kulkarni":"डॉ. मीना कुलकर्णी","Dr. Arjun Patil":"डॉ. अर्जुन पाटिल",
+    "Dr. Priya Joshi":"डॉ. प्रिया जोशी",
+    "City Diagnostics":"सिटी डायग्नोस्टिक्स","CARE Hospital":"केयर अस्पताल","LabCorp":"लैबकॉर्प",
+  },
+  mr:{
+    "Morning after food":"सकाळी जेवणानंतर","Night after food":"रात्री जेवणानंतर",
+    "Morning":"सकाळी","Before breakfast":"नाश्त्यापूर्वी","Sunday morning":"रविवारी सकाळी",
+    "Twice daily":"दिवसातून दोनदा","Once daily":"दिवसातून एकदा","Once weekly":"आठवड्यातून एकदा","SOS":"गरजेनुसार",
+    "Ongoing":"चालू","3 months":"3 महिने","30 days":"30 दिवस","15 days":"15 दिवस","5 days":"5 दिवस",
+    "Confirmed":"पुष्टी झाली","Pending":"प्रलंबित","Available":"उपलब्ध",
+    "Cardiology":"हृदयरोग विभाग","General Medicine":"सामान्य औषध","Endocrinology":"अंतःस्राव विभाग",
+    "Orthopedics":"हाडांचा विभाग","Neurology":"मज्जातंतू विभाग","Dermatology":"त्वचा विभाग",
+    "Blood Report":"रक्त अहवाल","ECG Report":"ईसीजी अहवाल","Thyroid Panel":"थायरॉइड तपासणी",
+    "X-Ray":"क्ष-किरण","MRI Report":"एमआरआय अहवाल","Urine Report":"लघवी अहवाल",
+    "Pruthviraj Patil":"पृथ्वीराज पाटील",
+    "Dr. Meena Kulkarni":"डॉ. मीना कुलकर्णी","Dr. Arjun Patil":"डॉ. अर्जुन पाटील",
+    "Dr. Priya Joshi":"डॉ. प्रिया जोशी",
+    "City Diagnostics":"सिटी डायग्नोस्टिक्स","CARE Hospital":"केअर हॉस्पिटल","LabCorp":"लॅबकॉर्प",
+  },
+  te:{
+    "Morning after food":"ఉదయం భోజనం తర్వాత","Night after food":"రాత్రి భోజనం తర్వాత",
+    "Morning":"ఉదయం","Before breakfast":"అల్పాహారానికి ముందు","Sunday morning":"ఆదివారం ఉదయం",
+    "Twice daily":"రోజుకు రెండుసార్లు","Once daily":"రోజుకు ఒకసారి","Once weekly":"వారానికి ఒకసారి","SOS":"అవసరమైనప్పుడు",
+    "Ongoing":"కొనసాగుతోంది","3 months":"3 నెలలు","30 days":"30 రోజులు","15 days":"15 రోజులు","5 days":"5 రోజులు",
+    "Confirmed":"నిర్ధారించబడింది","Pending":"పెండింగ్‌లో ఉంది","Available":"అందుబాటులో ఉంది",
+    "Cardiology":"గుండె వ్యాధి విభాగం","General Medicine":"సాధారణ వైద్యం","Endocrinology":"హార్మోన్ విభాగం",
+    "Orthopedics":"ఎముకల విభాగం","Neurology":"నాడీ విభాగం","Dermatology":"చర్మ విభాగం",
+    "Blood Report":"రక్త నివేదిక","ECG Report":"ఈసీజీ నివేదిక","Thyroid Panel":"థైరాయిడ్ పరీక్ష",
+    "X-Ray":"ఎక్స్-రే","MRI Report":"ఎంఆర్‌ఐ నివేదిక","Urine Report":"మూత్ర నివేదిక",
+
+    "Pruthviraj Patil":"ప్రుథ్వీరాజ్ పాటిల్",
+    "Dr. Meena Kulkarni":"డా. మీనా కుల్కర్ణి","Dr. Arjun Patil":"డా. అర్జున్ పాటిల్",
+    "Dr. Priya Joshi":"డా. ప్రియా జోషి",
+    "City Diagnostics":"సిటీ డయాగ్నస్టిక్స్","CARE Hospital":"కేర్ హాస్పిటల్","LabCorp":"లాబ్‌కార్ప్",
+  },
+  ta:{
+    "Morning after food":"காலை உணவுக்கு பிறகு","Night after food":"இரவு உணவுக்கு பிறகு",
+    "Morning":"காலை","Before breakfast":"காலை உணவுக்கு முன்","Sunday morning":"ஞாயிறு காலை",
+    "Twice daily":"நாளில் இரண்டு முறை","Once daily":"நாளில் ஒரு முறை","Once weekly":"வாரத்தில் ஒரு முறை","SOS":"தேவைப்படும்போது",
+    "Ongoing":"தொடர்கிறது","3 months":"3 மாதங்கள்","30 days":"30 நாட்கள்","15 days":"15 நாட்கள்","5 days":"5 நாட்கள்",
+    "Confirmed":"உறுதிப்படுத்தப்பட்டது","Pending":"நிலுவையில் உள்ளது","Available":"கிடைக்கிறது",
+    "Cardiology":"இதய நோய் பிரிவு","General Medicine":"பொது மருத்துவம்","Endocrinology":"நாளமில்லா சுரப்பி பிரிவு",
+    "Orthopedics":"எலும்பு பிரிவு","Neurology":"நரம்பியல் பிரிவு","Dermatology":"தோல் நோய் பிரிவு",
+    "Blood Report":"இரத்த அறிக்கை","ECG Report":"இ.சி.ஜி அறிக்கை","Thyroid Panel":"தைராய்டு பரிசோதனை",
+    "X-Ray":"எக்ஸ்-ரே","MRI Report":"எம்.ஆர்.ஐ அறிக்கை","Urine Report":"சிறுநீர் அறிக்கை",
+
+    "Pruthviraj Patil":"பிருத்வீராஜ் படில்",
+    "Dr. Meena Kulkarni":"டாக்டர். மீனா குல்கர்ணி","Dr. Arjun Patil":"டாக்டர். அர்ஜுன் படில்",
+    "Dr. Priya Joshi":"டாக்டர். பிரியா ஜோஷி",
+    "City Diagnostics":"சிட்டி டயக்னாஸ்டிக்ஸ்","CARE Hospital":"கேர் மருத்துவமனை","LabCorp":"லேப்கார்ப்",
+  },
+  kn:{
+    "Morning after food":"ಬೆಳಿಗ್ಗೆ ಊಟದ ನಂತರ","Night after food":"ರಾತ್ರಿ ಊಟದ ನಂತರ",
+    "Morning":"ಬೆಳಿಗ್ಗೆ","Before breakfast":"ತಿಂಡಿಗೆ ಮೊದಲು","Sunday morning":"ಭಾನುವಾರ ಬೆಳಿಗ್ಗೆ",
+    "Twice daily":"ದಿನಕ್ಕೆ ಎರಡು ಬಾರಿ","Once daily":"ದಿನಕ್ಕೆ ಒಮ್ಮೆ","Once weekly":"ವಾರಕ್ಕೆ ಒಮ್ಮೆ","SOS":"ಅಗತ್ಯವಿದ್ದಾಗ",
+    "Ongoing":"ಮುಂದುವರೆಯುತ್ತಿದೆ","3 months":"3 ತಿಂಗಳು","30 days":"30 ದಿನಗಳು","15 days":"15 ದಿನಗಳು","5 days":"5 ದಿನಗಳು",
+    "Confirmed":"ದೃಢಪಡಿಸಲಾಗಿದೆ","Pending":"ಬಾಕಿ ಇದೆ","Available":"ಲಭ್ಯವಿದೆ",
+    "Cardiology":"ಹೃದಯ ರೋಗ ವಿಭಾಗ","General Medicine":"ಸಾಮಾನ್ಯ ವೈದ್ಯಕೀಯ","Endocrinology":"ಅಂತಃಸ್ರಾವ ವಿಭಾಗ",
+    "Orthopedics":"ಮೂಳೆ ವಿಭಾಗ","Neurology":"ನರ ವಿಭಾಗ","Dermatology":"ಚರ್ಮ ರೋಗ ವಿಭಾಗ",
+    "Blood Report":"ರಕ್ತ ವರದಿ","ECG Report":"ಇಸಿಜಿ ವರದಿ","Thyroid Panel":"ಥೈರಾಯ್ಡ್ ಪರೀಕ್ಷೆ",
+    "X-Ray":"ಎಕ್ಸ್-ರೇ","MRI Report":"ಎಂಆರ್‌ಐ ವರದಿ","Urine Report":"ಮೂತ್ರ ವರದಿ",
+
+    "Pruthviraj Patil":"ಪೃಥ್ವೀರಾಜ್ ಪಾಟೀಲ್",
+    "Dr. Meena Kulkarni":"ಡಾ. ಮೀನಾ ಕುಲಕರ್ಣಿ","Dr. Arjun Patil":"ಡಾ. ಅರ್ಜುನ್ ಪಾಟೀಲ್",
+    "Dr. Priya Joshi":"ಡಾ. ಪ್ರಿಯಾ ಜೋಶಿ",
+    "City Diagnostics":"ಸಿಟಿ ಡಯಾಗ್ನೋಸ್ಟಿಕ್ಸ್","CARE Hospital":"ಕೇರ್ ಆಸ್ಪತ್ರೆ","LabCorp":"ಲ್ಯಾಬ್‌ಕಾರ್ಪ್",
+  },
+};
+function tD(val){
+  const lang=S.lang||"en";
+  const map=DATA_TRANS[lang]||DATA_TRANS.en;
+  return map[val]||val; // fallback to original if not in map
+}
+
+// ── Translation helper ────────────────────────────────────────────────────────
+function fmt(str,p){return str.replace(/{(\w+)}/g,(_,k)=>p&&p[k]!==undefined?p[k]:"{"+k+"}");}
+function T(key,params){
+  const lang=S.lang||"en";
+  const str=(STRINGS[lang]||STRINGS.en)[key]||STRINGS.en[key]||key;
+  return params?fmt(str,params):str;
+}
+function setLangBadge(){
+  const b=document.getElementById("lang-badge");
+  if(S.lang){b.textContent=T("lang_name");b.style.display="block";}
+  else b.style.display="none";
+}
+
+// ── 3-Layer Language Detection ────────────────────────────────────────────────
+
+// Layer 1: Unicode script ranges
+function detectByScript(text){
+  for(const char of text){
+    const cp=char.codePointAt(0);
+    if(cp>=0x0900&&cp<=0x097F)return"deva";  // Devanagari: Hindi or Marathi
+    if(cp>=0x0C00&&cp<=0x0C7F)return"te";    // Telugu
+    if(cp>=0x0B80&&cp<=0x0BFF)return"ta";    // Tamil
+    if(cp>=0x0C80&&cp<=0x0CFF)return"kn";    // Kannada
+    if(cp>=0x0980&&cp<=0x09FF)return"bn";    // Bengali — not supported, fallback
+    if(cp>=0x0A80&&cp<=0x0AFF)return"gu";    // Gujarati — not supported, fallback
+    if(cp>=0x0D00&&cp<=0x0D7F)return"ml";    // Malayalam — not supported, fallback
+  }
+  return null; // Latin or digits
+}
+
+// Layer 2: Keyword dictionary (Marathi markers vs Hindi markers + romanised)
+const LANG_KW={
+  mr:["नमस्कार","कसे आहे","आहे","मला","माझे","धन्यवाद","नाही","सुरू करा","आपले","namaskar","kem ahe","marathi"],
+  hi:["नमस्ते","कैसे हो","मुझे","मेरा","शुक्रिया","हाँ","नहीं","namaste","pranam","hindi","kaise ho"],
+  te:["నమస్కారం","హలో","హాయ్","vandanam","telugu","namaskaram","బాగున్నారా"],
+  ta:["வணக்கம்","ஹலோ","ஹாய்","vanakkam","tamil","எப்படி இருக்கீங்க"],
+  kn:["ನಮಸ್ಕಾರ","ಹಲೋ","ಹಾಯ್","namaskara","kannada","ಹೇಗಿದ್ದೀರಾ"],
+  en:["hello","hi","hey","good morning","good evening","start","begin","ok","english"],
+};
+function detectByKeyword(text){
+  const lower=text.toLowerCase();
+  for(const lang of["mr","hi","te","ta","kn"]){
+    if(LANG_KW[lang].some(w=>lower.includes(w)))return lang;
+  }
+  if(LANG_KW.en.some(w=>lower===w||lower.startsWith(w+" ")||lower.endsWith(" "+w)))return"en";
+  return null;
+}
+
+// Full 3-layer detection
+// waMetaLang: string like "mr","hi","en" from WhatsApp metadata (null if not available)
+function detectLanguage(text,waMetaLang){
+  const script=detectByScript(text);
+  // Direct unique scripts
+  if(script==="te")return"te";
+  if(script==="ta")return"ta";
+  if(script==="kn")return"kn";
+  // Devanagari — could be Hindi or Marathi
+  if(script==="deva"){
+    const kw=detectByKeyword(text);
+    if(kw==="mr")return"mr";
+    if(kw==="hi")return"hi";
+    // Layer 3: WhatsApp metadata tiebreaker
+    if(waMetaLang==="mr")return"mr";
+    if(waMetaLang==="hi")return"hi";
+    return"hi"; // Devanagari default = Hindi
+  }
+  // Unsupported non-Latin scripts (Bengali, Gujarati, Malayalam etc.)
+  if(script!==null)return"en";
+  // Latin script or digits — use keyword check
+  const kw=detectByKeyword(text);
+  if(kw)return kw;
+  // Layer 3: WhatsApp metadata
+  if(waMetaLang&&waMetaLang!=="en")return waMetaLang;
+  if(waMetaLang==="en")return"en";
+  // Cannot determine — return null → show language buttons
+  return null;
+}
+
+// ── Language selection buttons ────────────────────────────────────────────────
+function getLangOpts(){
+  return[
+    {label:"1 — English",val:"lang_en",cls:"lang-btn"},
+    {label:"2 — हिंदी (Hindi)",val:"lang_hi",cls:"lang-btn"},
+    {label:"3 — मराठी (Marathi)",val:"lang_mr",cls:"lang-btn"},
+    {label:"4 — తెలుగు (Telugu)",val:"lang_te",cls:"lang-btn"},
+    {label:"5 — தமிழ் (Tamil)",val:"lang_ta",cls:"lang-btn"},
+    {label:"6 — ಕನ್ನಡ (Kannada)",val:"lang_kn",cls:"lang-btn"},
+  ];
+}
+
+// ── Dynamic opts using current language ──────────────────────────────────────
+function getMainOpts(){return[{label:T("btn_medicines"),val:"1"},{label:T("btn_appointments"),val:"2"},{label:T("btn_vitals"),val:"3"},{label:T("btn_records"),val:"4"},{label:T("btn_help"),val:"5"}];}
+function getHelpOpts(){return[{divider:T("div_learn")},{label:T("btn_youtube"),link:"https://www.youtube.com/results?search_query=CARE+OHC+bot+tutorial"},{label:T("btn_guide"),link:"https://care.ohc.network/"},{divider:T("div_support")},{label:T("btn_contact"),val:"support"},{divider:T("div_goback")},{label:T("btn_back"),val:"0"}];}
+function backBtn(){return{label:T("btn_back"),val:"0"};}
+
+// ── Fuzzy intent detection (with native language words added) ─────────────────
+const FUZZY={
+  medicine:["medicine","medicines","med","meds","medcine","medicne","medicin","medisin","madecine","medicene","medisine","mdicine","medcin","meedicine","drug","drugs","tablet","tablets","pill","pills","prescription","prescriptions","dose",
+    "दवा","दवाई","दवाइयाँ","दवाएँ","औषध","औषधे","మందు","మందులు","மருந்து","மருந்துகள்","ಔಷಧ","ಔಷಧಿ","ಔಷಧಿಗಳು"],
+  appointment:["appointment","appointments","appt","apointment","appoitment","appoinment","appointement","appointmnt","appointmant","appntment","book appointment","schedule","doctor visit","slot","consult","consultation","upcoming","booking",
+    "अपॉइंटमेंट","डॉक्टर से मिलना","अपॉइन्टमेंट","अपॉइंटमेंट","అపాయింట్‌మెంట్","சந்திப்பு","ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್"],
+  vitals:["vital","vitals","bp","sugar","vitlas","vitels","vitalls","bpcheck","blood pressure","blood sugar","pulse","weight","health vitals","health stats","health readings",
+    "स्वास्थ्य","स्वास्थ","आरोग्य","तपासणी","ఆరోగ్యం","ஆரோக்கியம்","ಆರೋಗ್ಯ"],
+  records:["record","records","report","reports","recrods","recors","recods","reprot","reorts","repots","lab report","test results","results","medical records","history","documents","docs",
+    "रिकॉर्ड","रेकॉर्ड","रेकार्ड","రికార్డు","பதிவு","ದಾಖಲೆ"],
+  help:["help","hlep","hepl","hlp","assist","assistance","guide","how to","tutorial","info","faq","what can you do","commands","options","confused","stuck","?","??",
+    "सहायता","मदद","मदत","సహాయం","உதவி","ಸಹಾಯ"],
+  support:["support","contact","helpline","contcat","supprt","suport","call support","customer care","human help","talk to human","agent","speak to someone","phone support","email support","contact us",
+    "सहायता","सहाय्य","संपर्क","సహాయం","ஆதரவு","ಸಂಪರ್ಕ"],
+  cancel:["0","cancel","exit","back","menu","main","stop","quit","end","done","go back","main menu","home","restart","reset","start over","return","nevermind","never mind",
+    "वापस","मुख्य मेनू","रद्द","मागे","రద్దు","ரத்து","ರದ್ದು","ಹಿಂದೆ"],
+};
+function detectIntent(m){
+  if(m==="1")return"medicine";
+  if(m==="2")return"appointment";
+  if(m==="3")return"vitals";
+  if(m==="4")return"records";
+  if(m==="5")return"help";
+  for(const[intent,words]of Object.entries(FUZZY)){if(words.includes(m))return intent;}
+  return"unknown";
+}
+function isTextEscape(m){return!/^\d+$/.test(m)&&detectIntent(m)!=="unknown";}
+
+// ── Utility ───────────────────────────────────────────────────────────────────
 function now(){const d=new Date();let h=d.getHours(),m=d.getMinutes(),ap=h>=12?"PM":"AM";h=h%12||12;return`${h}:${m.toString().padStart(2,"0")} ${ap}`}
 function clearHint(){const h=document.getElementById("empty-hint");if(h)h.remove();}
+function resetFlow(){S.activeHandler=null;S.step=0;S.ctx={};}
 
 function lockUI(){
   inp.disabled=true;sbtn.disabled=true;
-  inp.placeholder="Access locked. Please try after 24 hours.";
-  const banner=document.createElement("div");
-  banner.className="locked-banner";
-  banner.textContent="Access locked. Please try again after 24 hours.";
-  document.getElementById("wrap").insertBefore(banner,document.getElementById("bar"));
+  inp.placeholder=T("locked_ph");
+  const b=document.createElement("div");b.className="locked-banner";b.textContent=T("locked_banner");
+  document.getElementById("wrap").insertBefore(b,document.getElementById("bar"));
 }
 
 function addMsg(who,text,intent,handler,opts){
   clearHint();
-  const row=document.createElement("div");
-  row.className="row "+who;
-  const bub=document.createElement("div");
-  bub.className="bub "+who;
-  bub.textContent=text;
-  row.appendChild(bub);
-  const ts=document.createElement("div");
-  ts.className="ts";ts.textContent=now();
-  row.appendChild(ts);
-  if(intent||handler){
-    const dbg=document.createElement("div");
-    dbg.className="dbg";
-    dbg.textContent=(intent?"Intent: "+intent:"")+(handler?"  Handler: "+handler:"");
-    row.appendChild(dbg);
-  }
+  const row=document.createElement("div");row.className="row "+who;
+  const bub=document.createElement("div");bub.className="bub "+who;bub.textContent=text;row.appendChild(bub);
+  const ts=document.createElement("div");ts.className="ts";ts.textContent=now();row.appendChild(ts);
+  if(intent||handler){const dbg=document.createElement("div");dbg.className="dbg";dbg.textContent=(intent?"Intent: "+intent:"")+(handler?"  Handler: "+handler:"");row.appendChild(dbg);}
   msgs.appendChild(row);
   if(opts&&opts.length){
     const ob=document.createElement("div");ob.className="opts";
@@ -113,9 +505,9 @@ function addMsg(who,text,intent,handler,opts){
       if(o.divider){const d=document.createElement("div");d.className="divider";d.textContent=o.divider;ob.appendChild(d);return;}
       const btn=document.createElement("button");
       const isNav=(o.val==="__next__"||o.val==="__prev__");
-      btn.className="opt-btn"+(o.link?" link-btn":"")+(isNav?" nav-btn":"");
+      btn.className="opt-btn"+(o.link?" link-btn":"")+(isNav?" nav-btn":"")+(o.cls?" "+o.cls:"");
       btn.textContent=o.label;
-      if(o.link){btn.onclick=()=>{window.open(o.link,"_blank");};}
+      if(o.link){btn.onclick=()=>window.open(o.link,"_blank");}
       else{btn.onclick=()=>{ob.querySelectorAll(".opt-btn").forEach(b=>b.disabled=true);sendDirect(o.label,o.val);};}
       ob.appendChild(btn);
     });
@@ -131,165 +523,155 @@ function showTyping(){
   msgs.appendChild(r);msgs.scrollTop=msgs.scrollHeight;
 }
 
-const MAIN_OPTS=[{label:"Medicines",val:"1"},{label:"Appointments",val:"2"},{label:"Vitals",val:"3"},{label:"Records",val:"4"},{label:"Help",val:"5"}];
-const HELP_OPTS=[{divider:"— Learn how to use CARE Bot —"},{label:"▶  Watch Tutorial on YouTube",link:"https://www.youtube.com/results?search_query=CARE+OHC+bot+tutorial"},{label:"📖  Read the Website Guide",link:"https://care.ohc.network/"},{divider:"— Need human support? —"},{label:"📞  Contact Support",val:"support"},{divider:"— Go back —"},{label:"Back to main menu",val:"0"}];
+// ── Response helpers ──────────────────────────────────────────────────────────
+function mainMenu(){return T("main_menu",{name:tD(PAT.name)});}
+function unknownMenu(){return T("unknown_menu");}
+function toMainMenu(){resetFlow();return{text:unknownMenu(),intent:"unknown",handler:"Dispatcher.unknown_to_menu",opts:getMainOpts()};}
 
-function mainMenu(){return`Hi ${PAT.name}!\nHow can I assist you today?`;}
-function unknownMenu(){return`Here's what I can help you with:`;}
-
-// ── KEY FIX: all known top-level intents are listed here ──
-function detectIntent(m){
-  if(["1","medicine","medicines","med","meds"].includes(m))return"medicine";
-  if(["2","appointment","appointments","appt"].includes(m))return"appointment";
-  if(["3","vital","vitals","bp","sugar"].includes(m))return"vitals";
-  if(["4","record","records","report","reports"].includes(m))return"records";
-  if(["5","help"].includes(m))return"help";
-  if(["support","contact","helpline"].includes(m))return"support";
-  if(["0","cancel","exit","back","menu","main"].includes(m))return"cancel";
-  return"unknown";
-}
-
-// returns true ONLY for text-based top-level commands — never for bare numbers.
-// Numbers like "1","2","3","4","5" are ambiguous (list selection vs menu shortcut)
-// so they must stay within the active handler flow, not escape it.
-function isTopLevelEscape(m){
-  if(/^\d+$/.test(m)) return false; // pure number → never escape
-  return detectIntent(m)!=="unknown";
-}
-
+// ── Medicine handler ──────────────────────────────────────────────────────────
 function buildMedPage(meds,page){
-  const totalPages=Math.ceil(meds.length/PAGE_SIZE);
-  const start=page*PAGE_SIZE;
-  const slice=meds.slice(start,start+PAGE_SIZE);
-  const opts=slice.map((med,i)=>({label:`${med.name} — ${med.dose}`,val:`${start+i+1}`}));
+  const total=Math.ceil(meds.length/PAGE_SIZE),start=page*PAGE_SIZE;
+  const opts=meds.slice(start,start+PAGE_SIZE).map((med,i)=>({label:`${med.name} — ${med.dose}`,val:`${start+i+1}`}));
   const nav=[];
-  if(page>0)nav.push({label:"← Previous page",val:"__prev__"});
-  if(page<totalPages-1)nav.push({label:"Next page →",val:"__next__"});
-  return{text:`Your medicines (${meds.length})\nPage ${page+1} of ${totalPages} — showing ${start+1}–${Math.min(start+PAGE_SIZE,meds.length)}:`,intent:"medicine",handler:"MedicineHandler.list_page_"+(page+1),opts:[...opts,...nav,{label:"Back to main menu",val:"0"}]};
+  if(page>0)nav.push({label:T("btn_prev"),val:"__prev__"});
+  if(page<total-1)nav.push({label:T("btn_next"),val:"__next__"});
+  return{text:T("med_list",{n:meds.length,p:page+1,t:total,s:start+1,e:Math.min(start+PAGE_SIZE,meds.length)}),intent:"medicine",handler:"MedicineHandler.list_page_"+(page+1),opts:[...opts,...nav,backBtn()]};
 }
-
 function handleMed(m){
   if(m==="__next__"){S.ctx.medPage=(S.ctx.medPage||0)+1;return buildMedPage(S.ctx.meds,S.ctx.medPage);}
   if(m==="__prev__"){S.ctx.medPage=Math.max(0,(S.ctx.medPage||0)-1);return buildMedPage(S.ctx.meds,S.ctx.medPage);}
   if(S.step===0){const meds=PAT.medicines;S.ctx.meds=meds;S.ctx.medPage=0;S.step=1;return buildMedPage(meds,0);}
   if(S.step===1){
     const n=parseInt(m),meds=S.ctx.meds;
-    if(isNaN(n)||n<1||n>meds.length){
-      if(isNaN(n)){S.activeHandler=null;S.step=0;S.ctx={};return{text:unknownMenu(),intent:"unknown",handler:"Dispatcher.unknown_to_menu",opts:MAIN_OPTS};}
-      return{...buildMedPage(meds,S.ctx.medPage||0),text:`Please select a number between 1 and ${meds.length}.`};
-    }
+    if(isNaN(n)||n<1||n>meds.length)return toMainMenu();
     const med=meds[n-1];S.ctx.sel=med;S.step=2;
-    return{text:`${med.name}\n─────────────────\nDose      : ${med.dose}\nTiming    : ${med.timing}\nFrequency : ${med.freq}\nDuration  : ${med.duration}`,intent:"medicine",handler:"MedicineHandler.detail",opts:[{label:"View another medicine",val:"1"},{label:"Back to main menu",val:"0"}]};
+    return{text:T("med_detail",{name:med.name,dose:med.dose,timing:tD(med.timing),freq:tD(med.freq),dur:tD(med.duration)}),intent:"medicine",handler:"MedicineHandler.detail",opts:[{label:T("btn_view_med"),val:"1"},backBtn()]};
   }
-  if(S.step===2){if(m==="1"){S.step=0;return handleMed(m);}return null;}
+  if(S.step===2){if(m==="1"){S.step=0;return handleMed(m);}return toMainMenu();}
 }
 
+// ── Appointment handler ───────────────────────────────────────────────────────
 function handleAppt(m){
-  if(S.step===0){const a=PAT.appointments;S.ctx.apts=a;S.step=1;const opts=a.map((ap,i)=>({label:`${ap.doctor} — ${ap.date} ${ap.time}`,val:`${i+1}`}));opts.push({label:"Back to main menu",val:"0"});return{text:`Your appointments (${a.length})\nSelect one to view details:`,intent:"appointment",handler:"AppointmentHandler.list",opts};}
-  if(S.step===1){const n=parseInt(m),a=S.ctx.apts;if(isNaN(n)||n<1||n>a.length){if(isNaN(n)){S.activeHandler=null;S.step=0;S.ctx={};return{text:unknownMenu(),intent:"unknown",handler:"Dispatcher.unknown_to_menu",opts:MAIN_OPTS};}const opts=a.map((ap,i)=>({label:`${ap.doctor} — ${ap.date}`,val:`${i+1}`}));opts.push({label:"Back to main menu",val:"0"});return{text:`Please select a number between 1 and ${a.length}.`,intent:"appointment",handler:"AppointmentHandler.invalid",opts};}const ap=a[n-1];S.step=2;return{text:`Appointment Details\n─────────────────\nDoctor    : ${ap.doctor}\nDept      : ${ap.dept}\nDate      : ${ap.date}\nTime      : ${ap.time}\nStatus    : ${ap.status}`,intent:"appointment",handler:"AppointmentHandler.detail",opts:[{label:"View another appointment",val:"1"},{label:"Back to main menu",val:"0"}]};}
-  if(S.step===2){if(m==="1"){S.step=0;return handleAppt(m);}return null;}
+  if(S.step===0){
+    const a=PAT.appointments;S.ctx.apts=a;S.step=1;
+    const opts=a.map((ap,i)=>({label:`${tD(ap.doctor)} — ${ap.date} ${ap.time} (${tD(ap.status)})`,val:`${i+1}`}));opts.push(backBtn());
+    return{text:T("appt_list",{n:a.length}),intent:"appointment",handler:"AppointmentHandler.list",opts};
+  }
+  if(S.step===1){
+    const n=parseInt(m),a=S.ctx.apts;
+    if(isNaN(n)||n<1||n>a.length)return toMainMenu();
+    const ap=a[n-1];S.step=2;
+    return{text:T("appt_detail",{doctor:tD(ap.doctor),dept:tD(ap.dept),date:ap.date,time:ap.time,status:tD(ap.status)}),intent:"appointment",handler:"AppointmentHandler.detail",opts:[{label:T("btn_view_appt"),val:"1"},backBtn()]};
+  }
+  if(S.step===2){if(m==="1"){S.step=0;return handleAppt(m);}return toMainMenu();}
 }
 
-function handleVitals(){const v=PAT.vitals;S.step=1;return{text:`Latest Vitals\n─────────────────\nBP         : ${v.bp}\nBlood Sugar: ${v.sugar}\nWeight     : ${v.weight}\nPulse      : ${v.pulse}\nRecorded   : ${v.recorded}`,intent:"vitals",handler:"VitalsHandler.show",opts:[{label:"Back to main menu",val:"0"}]};}
+// ── Vitals handler ────────────────────────────────────────────────────────────
+function handleVitals(m){
+  if(S.step===0){
+    const v=PAT.vitals;S.step=1;
+    return{text:T("vitals",{bp:v.bp,sugar:v.sugar,weight:v.weight,pulse:v.pulse,recorded:v.recorded}),intent:"vitals",handler:"VitalsHandler.show",opts:[backBtn()]};
+  }
+  return toMainMenu();
+}
 
+// ── Records handler ───────────────────────────────────────────────────────────
 function handleRec(m){
-  if(S.step===0){const r=PAT.records;S.ctx.recs=r;S.step=1;const opts=r.map((rec,i)=>({label:`${rec.type} — ${rec.date}`,val:`${i+1}`}));opts.push({label:"Back to main menu",val:"0"});return{text:`Your records (${r.length})\nSelect one to view details:`,intent:"records",handler:"RecordsHandler.list",opts};}
-  if(S.step===1){const n=parseInt(m),r=S.ctx.recs;if(isNaN(n)||n<1||n>r.length){if(isNaN(n)){S.activeHandler=null;S.step=0;S.ctx={};return{text:unknownMenu(),intent:"unknown",handler:"Dispatcher.unknown_to_menu",opts:MAIN_OPTS};}const opts=r.map((rec,i)=>({label:`${rec.type} — ${rec.date}`,val:`${i+1}`}));opts.push({label:"Back to main menu",val:"0"});return{text:`Please select a number between 1 and ${r.length}.`,intent:"records",handler:"RecordsHandler.invalid",opts};}const rec=r[n-1];S.step=2;return{text:`Record Details\n─────────────────\nType    : ${rec.type}\nDate    : ${rec.date}\nLab     : ${rec.lab}\nStatus  : Available`,intent:"records",handler:"RecordsHandler.detail",opts:[{label:"View another record",val:"1"},{label:"Back to main menu",val:"0"}]};}
-  if(S.step===2){if(m==="1"){S.step=0;return handleRec(m);}return null;}
+  if(S.step===0){
+    const r=PAT.records;S.ctx.recs=r;S.step=1;
+    const opts=r.map((rec,i)=>({label:`${tD(rec.type)} — ${rec.date}`,val:`${i+1}`}));opts.push(backBtn());
+    return{text:T("rec_list",{n:r.length}),intent:"records",handler:"RecordsHandler.list",opts};
+  }
+  if(S.step===1){
+    const n=parseInt(m),r=S.ctx.recs;
+    if(isNaN(n)||n<1||n>r.length)return toMainMenu();
+    const rec=r[n-1];S.step=2;
+    return{text:T("rec_detail",{type:tD(rec.type),date:rec.date,lab:tD(rec.lab)}),intent:"records",handler:"RecordsHandler.detail",opts:[{label:T("btn_view_rec"),val:"1"},backBtn()]};
+  }
+  if(S.step===2){if(m==="1"){S.step=0;return handleRec(m);}return toMainMenu();}
 }
 
+// ── Dispatcher ────────────────────────────────────────────────────────────────
 function dispatch(val){
   const m=val.trim().toLowerCase();
   if(S.phase==="locked")return null;
 
+  // ── WELCOME: detect language from first message ──────────────────────────
   if(S.phase==="welcome"){
-    S.phase="yob";
-    return{text:"Hello! Welcome to CARE Bot\n\nTo assist you, please enter your year of birth.\n\nExample: 1990",intent:"auth",handler:"AuthHandler.ask_yob",opts:[]};
+    // Simulate WhatsApp metadata (null = not available in demo)
+    // In production: const waLang = webhookPayload.messages[0].lang || null;
+    const waLang=null;
+    const detected=detectLanguage(val,waLang);
+    if(detected){
+      S.lang=detected;setLangBadge();S.phase="yob";
+      return{text:T("welcome_yob"),intent:"auth",handler:"AuthHandler.lang_detected_"+detected,opts:[]};
+    } else {
+      // Cannot determine — show language selection buttons
+      S.phase="lang_select";
+      return{text:STRINGS.en.lang_select,intent:"auth",handler:"AuthHandler.lang_unknown",opts:getLangOpts()};
+    }
   }
 
+  // ── LANG SELECT: user clicked a language button ──────────────────────────
+  if(S.phase==="lang_select"){
+    if(val.startsWith("lang_")){
+      S.lang=val.replace("lang_","");setLangBadge();S.phase="yob";
+      return{text:T("welcome_yob"),intent:"auth",handler:"AuthHandler.lang_selected_"+S.lang,opts:[]};
+    }
+    // Typed something instead of clicking — try detecting again
+    const detected=detectLanguage(val,null);
+    if(detected){S.lang=detected;setLangBadge();S.phase="yob";return{text:T("welcome_yob"),intent:"auth",handler:"AuthHandler.lang_detected_"+detected,opts:[]};}
+    return{text:STRINGS.en.lang_select,intent:"auth",handler:"AuthHandler.lang_unknown",opts:getLangOpts()};
+  }
+
+  // ── YOB verification ─────────────────────────────────────────────────────
   if(S.phase==="yob"){
     const yob=parseInt(m),p=PATIENTS[DEMO];
-    if(yob===p.yob){S.phase="verified";PAT=p;return{text:mainMenu(),intent:"auth",handler:"AuthHandler.verified",opts:MAIN_OPTS};}
+    if(yob===p.yob){S.phase="verified";PAT=p;return{text:mainMenu(),intent:"auth",handler:"AuthHandler.verified",opts:getMainOpts()};}
     S.yobTries++;
-    if(S.yobTries>=3){S.phase="locked";setTimeout(lockUI,100);return{text:"Too many incorrect attempts.\n\nPlease try again after 24 hours.",intent:"auth",handler:"AuthHandler.locked",opts:[]};}
-    return{text:`Incorrect year of birth. Please try again.\n\n${3-S.yobTries} attempt${3-S.yobTries===1?"":"s"} remaining.`,intent:"auth",handler:"AuthHandler.mismatch",opts:[]};
+    if(S.yobTries>=3){S.phase="locked";setTimeout(lockUI,100);return{text:T("yob_locked"),intent:"auth",handler:"AuthHandler.locked",opts:[]};}
+    const rem=3-S.yobTries;
+    return{text:T("yob_wrong",{n:rem,s:rem===1?"":"s"}),intent:"auth",handler:"AuthHandler.mismatch",opts:[]};
   }
 
-  // ── cancel / back always resets ──
-  if(["0","cancel","exit","back","menu","main"].includes(m)){
-    S.activeHandler=null;S.step=0;S.ctx={};
-    return{text:mainMenu(),intent:"cancel",handler:"Dispatcher.reset",opts:MAIN_OPTS};
+  // ── Verified: full flow ───────────────────────────────────────────────────
+  if(["0","cancel","exit","back","menu","main","वापस","मुख्य मेनू","मागे","రద్దు","ரத்து","ರದ್ದು"].includes(m)){
+    resetFlow();return{text:mainMenu(),intent:"cancel",handler:"Dispatcher.reset",opts:getMainOpts()};
   }
-
-  // ── pagination passes straight through to active handler ──
-  if(S.activeHandler&&(m==="__next__"||m==="__prev__")&&S.activeHandler==="medicine"){
-    return handleMed(m);
+  if(S.activeHandler==="medicine"&&(m==="__next__"||m==="__prev__"))return handleMed(m);
+  if(S.activeHandler==="help"){
+    if(isTextEscape(m)){resetFlow();}else{return toMainMenu();}
   }
-
-  // ── ESCAPE FIX: if mid-flow but user typed a text-based known intent
-  //    (e.g. "medicine", "support", "help") — escape and re-route.
-  //    Pure numbers (1,2,3…) are NEVER treated as escape triggers —
-  //    they belong to the active handler's list selection. ──
-  if(S.activeHandler&&S.activeHandler!=="help"&&isTopLevelEscape(m)){
-    S.activeHandler=null;S.step=0;S.ctx={};
-    // fall through to intent routing below
-  }
-
-  // ── continue active flow if still set ──
+  if(S.activeHandler&&S.activeHandler!=="help"&&isTextEscape(m)){resetFlow();}
   if(S.activeHandler&&S.activeHandler!=="help"){
     let res=null;
     if(S.activeHandler==="medicine")res=handleMed(m);
     else if(S.activeHandler==="appointment")res=handleAppt(m);
-    else if(S.activeHandler==="vitals")res=handleVitals();
+    else if(S.activeHandler==="vitals")res=handleVitals(m);
     else if(S.activeHandler==="records")res=handleRec(m);
     if(res)return res;
-    // handler returned null → reset and fall through
-    S.activeHandler=null;S.step=0;S.ctx={};
+    resetFlow();
   }
-
-  // ── top-level intent routing ──
   const intent=detectIntent(m);
-
-  // unknown → show menu (never show error)
-  if(intent==="unknown"){
-    return{text:unknownMenu(),intent:"unknown",handler:"Dispatcher.unknown_to_menu",opts:MAIN_OPTS};
-  }
-  if(intent==="cancel"){
-    S.activeHandler=null;S.step=0;S.ctx={};
-    return{text:mainMenu(),intent:"cancel",handler:"Dispatcher.reset",opts:MAIN_OPTS};
-  }
-  if(intent==="help"){
-    S.activeHandler="help";
-    return{text:"How can I help you?\n\nChoose an option below:",intent:"help",handler:"HelpHandler",opts:HELP_OPTS};
-  }
-  if(intent==="support"){
-    return{text:"Support Contact\n─────────────────\nPhone   : +91-800-CARE-OHC\nEmail   : support@care.ohc.network\nHours   : Mon–Sat, 9 AM – 6 PM\n\nOur team will get back to you shortly.",intent:"support",handler:"HelpHandler.support",opts:[{label:"Back to main menu",val:"0"}]};
-  }
-
-  S.activeHandler=intent;S.step=0;S.ctx={};
+  if(intent==="unknown")return toMainMenu();
+  if(intent==="cancel"){resetFlow();return{text:mainMenu(),intent:"cancel",handler:"Dispatcher.reset",opts:getMainOpts()};}
+  if(intent==="help"){S.activeHandler="help";return{text:T("help_title"),intent:"help",handler:"HelpHandler",opts:getHelpOpts()};}
+  if(intent==="support"){return{text:T("support_text"),intent:"support",handler:"HelpHandler.support",opts:[backBtn()]};}
+  resetFlow();S.activeHandler=intent;
   if(intent==="medicine")return handleMed(m);
   if(intent==="appointment")return handleAppt(m);
-  if(intent==="vitals")return handleVitals();
+  if(intent==="vitals")return handleVitals(m);
   if(intent==="records")return handleRec(m);
 }
 
+// ── Send ──────────────────────────────────────────────────────────────────────
 function sendDirect(displayText,valText){
   if(S.phase==="locked")return;
   addMsg("you",displayText,null,null,[]);
   showTyping();
-  setTimeout(()=>{
-    document.getElementById("typing")?.remove();
-    const res=dispatch(valText);
-    if(res)addMsg("bot",res.text,res.intent,res.handler,res.opts||[]);
-  },380);
+  setTimeout(()=>{document.getElementById("typing")?.remove();const res=dispatch(valText);if(res)addMsg("bot",res.text,res.intent,res.handler,res.opts||[]);},380);
 }
-
-function send(){
-  const val=inp.value.trim();if(!val)return;
-  inp.value="";
-  sendDirect(val,val);
-}
-
+function send(){const val=inp.value.trim();if(!val)return;inp.value="";sendDirect(val,val);}
 inp.addEventListener("keydown",e=>{if(e.key==="Enter")send();});
 sbtn.addEventListener("click",send);
 </script>
